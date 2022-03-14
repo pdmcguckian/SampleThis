@@ -5,6 +5,11 @@ import numpy as np
 import librosa
 import soundfile as sf
 import aubio
+import keyboard
+from scipy.io.wavfile import read
+import matplotlib.pyplot as plt
+import sys
+import statistics
 
 class RecordNotes():
 
@@ -19,21 +24,22 @@ class RecordNotes():
         self.fs = 44100  #44100hz
         self.seconds = 1.5 #Length of Recording
 
-        self.recordSound()
+        print("q to record.")
+        while True:
+            if keyboard.is_pressed('q'):
+                self.recordSound()
 
-        self.NormailseFrequency()
+                self.NormailseFrequency()
 
-        for i in range(len(file_names)):
-            y, sr = librosa.load(file_path+file_names[0], sr=self.fs) # y is a numpy array of the wav file, sr = sample rate
-            y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=i+1, bins_per_octave=12) # shifted by 4 half steps
-            sf.write(file_path+file_names[i], y_shifted, 44100, 'PCM_24')
+                for i in range(len(file_names)):
+                    y, sr = librosa.load(file_path+file_names[0], sr=self.fs) # y is a numpy array of the wav file, sr = sample rate
+                    y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=i+1, bins_per_octave=12) # shifted by 4 half steps
+                    sf.write(file_path+file_names[i], y_shifted, 44100, 'PCM_24')
 
     def recordSound(self):
         self.p = pyaudio.PyAudio()  # Create an interface to PortAudio
         #Count in recording
-        print("1")
-        sleep(1)
-        print('Recording')
+        print("recording...")
 
         #Record audio stream
         self.stream = self.p.open(format=self.sample_format,
@@ -44,8 +50,8 @@ class RecordNotes():
 
         self.frames = []  # Initialize array to store frames
 
-        # Store data in chunks for 3 seconds
-        for i in range(0, int(self.fs / self.chunk * self.seconds)):
+        
+        while keyboard.is_pressed('q'):
             self.data = self.stream.read(self.chunk)
             self.frames.append(self.data)
 
@@ -73,13 +79,29 @@ class RecordNotes():
 
     def NormailseFrequency(self):
         y, sr = librosa.load(file_path+file_names[0], sr=self.fs)
+        print(y)
 
         tolerance = 0.8
         win_s = 1024 # fft size
-        hop_s = 512 # hop size
+        hop_s = 1024 # hop size
         pitch_o = aubio.pitch("default", win_s, hop_s, self.fs)
         pitch_o.set_tolerance(tolerance)
-        pitch = pitch_o(y[30000:30512])[0]
+
+        count = 0
+        for i in y:
+            count += 1
+            if i >= 0.05:
+                break
+
+        y = y[count:]
+
+        pitches = []
+        for i in range(1, round(len(y)/hop_s)):
+            pitch = pitch_o(y[hop_s*(i-1):i*hop_s])[0]
+            pitches.append(pitch)
+
+        print(pitches)
+        pitch = statistics.median(pitches)
         print(pitch)
         pitch_shift = (pitch-440)/440 
 
