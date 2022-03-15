@@ -33,7 +33,7 @@ class RecordNotes():
 
                 for i in range(len(file_names)):
                     y, sr = librosa.load(file_path+file_names[0], sr=self.fs) # y is a numpy array of the wav file, sr = sample rate
-                    y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=i+1, bins_per_octave=12) # shifted by 4 half steps
+                    y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=i+1, bins_per_octave=24) # shifted by 4 half steps
                     sf.write(file_path+file_names[i], y_shifted, 44100, 'PCM_24')
 
     def recordSound(self):
@@ -103,7 +103,7 @@ class RecordNotes():
         print(pitches)
         pitch = statistics.median(pitches)
         print(pitch)
-        pitch_shift = (pitch-440)/440 
+        pitch_shift = (pitch-123.47)/123.47 
 
         y_A = librosa.effects.pitch_shift(y, sr, n_steps=-pitch_shift, bins_per_octave=1)
         sf.write(file_path+file_names[0], y_A, 44100, 'PCM_24')
@@ -111,7 +111,7 @@ class RecordNotes():
 
 
 file_path = "/Users/pdmcguckian/Documents/Projects 4/Audio Experience/"
-file_names = ["c4.wav", "c#4.wav", "d4.wav", "d#4.wav", "e4.wav", "f4.wav", "f#4.wav", "g4.wav", "g#4.wav", "a4.wav", "a#4.wav", "b4.wav"]
+file_names = ["C2.wav", "C#2.wav", "D2.wav", "D#2.wav", "E2.wav", "F2.wav", "F#2.wav", "G2.wav", "G#2.wav", "A2.wav", "A#2.wav", "B2.wav","C3.wav", "C#3.wav", "D3.wav", "D#3.wav", "E3.wav", "F3.wav", "F#3.wav", "G3.wav", "G#3.wav", "A3.wav", "A#3.wav", "B3.wav", "C4.wav", "C#4.wav", "D4.wav", "D#4.wav", "E4.wav", "F4.wav", "F#4.wav", "G4.wav", "G#4.wav", "A4.wav", "A#4.wav", "B4.wav", "C5.wav", "C#5.wav", "D5.wav", "D#5.wav", "E5.wav", "F5.wav", "F#5.wav", "G5.wav", "G#5.wav", "A5.wav", "A#5.wav", "B5.wav", "C6.wav", "C#6.wav", "D6.wav", "D#6.wav", "E6.wav", "F6.wav", "F#6.wav", "G6.wav", "G#6.wav", "A6.wav", "A#6.wav", "B6.wav", "C7.wav", "C#7.wav", "D7.wav", "D#7.wav", "E7.wav", "F7.wav", "F#7.wav", "G7.wav", "G#7.wav", "A7.wav", "A#7.wav", "B7.wav"]
 
 
 vals = RecordNotes(file_path, file_names)
