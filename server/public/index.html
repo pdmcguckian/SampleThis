@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./index.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>Hello World Simple App</title>
+  </head>
+  <body>
+    <div class="container">
+        <h1>Hello!</h1>
+        <h2 id="instruction">Please submit your YouTube URL below</h2>
+        <form id="yt-form">
+            <label>YouTube URL:</label>
+            <input name="url" id="url" type="text"></input>
+            <button type="submit">Submit</button>
+        </form>
+        
+    </div>
+  </body>
+  <script>
+    const instructionHeading = document.getElementById("instruction");
+
+    // function logSubmit(event) {
+    //   instructionHeading.textContent = `Thank you. Now processing your tune...`;
+    //    // document.getElementById("url").value = "";
+    // }
+
+    function formSubmit(event) {
+      var url = "/submit";
+      var request = new XMLHttpRequest();
+      request.open('POST', url, true);
+      request.onload = function() { // request successful
+      // we can use server response to our request now
+        console.log(request.responseText);
+      };
+
+      request.onerror = function() {
+        // request failed
+      };
+
+      request.send(new FormData(event.target)); // create FormData from form that triggered event
+      event.preventDefault();
+    }
+
+
+    const form = document.getElementById('yt-form');
+    form.addEventListener('submit', formSubmit);
+
+  </script>
+</html>

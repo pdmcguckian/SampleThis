@@ -1,0 +1,70 @@
+.App {
+  text-align: center;
+}
+
+:root {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 18px
+}
+
+
+.App-cont {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+input[type="text"] {
+  border-radius: 8px;
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+div {
+  font-size: 18px;
+  font-family: 'Poppins', sans-serif;
+}
+p {
+  font-size: 18px;
+  font-family: 'Poppins', sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Poppins", sans-serif;
+}
+
+.row-cont {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.col-cont {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.mb32 {
+  margin-bottom: 32px;
+}
+.mb16 {
+  margin-bottom: 16px;
+}
+
+.error {
+  font-size: 18px;
+  color: #dd5454;
+}
