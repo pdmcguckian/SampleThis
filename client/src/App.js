@@ -10,20 +10,26 @@ import {
   Row,
   Col,
   Container,
+  Modal,
 } from "react-bootstrap";
-import { PlayFill, StopFill } from "react-bootstrap-icons";
+import { PlayFill, StopFill, InfoCircle } from "react-bootstrap-icons";
 
 function App() {
   var youtubeInput = React.useRef();
   var [URLInput, setURLInput] = React.useState(1);
-  var [showSpinner, setShowSpinner] = React.useState(0);
-  var [showError, setShowError] = React.useState(0);
+  var [showSpinner, setShowModalSpinner] = React.useState(0);
+  var [showError, setShowModalError] = React.useState(0);
   var [midiMsg, setMidiMsg] = React.useState("");
-  var [enableMediaButtons, setEnableMediaButtons] = React.useState(0);
+  var [enablePlayButtons, setEnablePlayButtons] = React.useState(1);
+  var [enableStopButtons, setEnableStopButtons] = React.useState(0);
   var [changeSongEnabled, setChangeSongEnabled] = React.useState(1);
   var [audioSampler, setAudioSampler] = React.useState(false);
   var [audioSamplerLoading, setAudioSamplerLoading] = React.useState(0);
   var [audioSamplerMsg, setAudioSamplerMsg] = React.useState("");
+  var [showModal, setShowModal] = React.useState(true);
+
+  const handleClose = () => setShowModal(false);
+  const handleShow = () => setShowModal(true);
 
   const SERVER_URL = "http://localhost:5000";
 
@@ -32,8 +38,9 @@ function App() {
 
     setMidiMsg("");
 
-    setEnableMediaButtons(0);
-    setShowError(0);
+    setEnablePlayButtons(0);
+    setEnableStopButtons(0);
+    setShowModalError(0);
     const requestOptions = {
       method: "POST",
       headers: {
@@ -43,18 +50,17 @@ function App() {
         url: ytUrl,
       }),
     };
-    setShowSpinner(1);
+    setShowModalSpinner(1);
     setChangeSongEnabled(0);
     fetch(SERVER_URL + "/api/submitsong", requestOptions) //POST request
       .then((response) => {
         if (response.ok) {
           setURLInput(0);
-          setShowSpinner(0);
+          setShowModalSpinner(0);
           showMidiStatus();
         } else if (response.status === 404) {
-          console.log("here");
-          setShowSpinner(0);
-          setShowError(1);
+          setShowModalSpinner(0);
+          setShowModalError(1);
         }
       })
       .catch((error) => {
@@ -64,6 +70,7 @@ function App() {
 
   async function showMidiStatus() {
     setMidiMsg("Creating midi file...");
+    setShowModalSpinner(1);
     var status = 0;
     const requestOptions = {
       method: "GET",
@@ -78,7 +85,8 @@ function App() {
             console.log("midi finished loading");
             setMidiMsg("Ready to Play");
             setChangeSongEnabled(1);
-            setEnableMediaButtons(1);
+            setShowModalSpinner(0);
+            setEnablePlayButtons(1);
             status = 1;
           }
         })
@@ -115,6 +123,36 @@ function App() {
       await timeout(2000);
     }
   }
+  function playAudio() {
+    var status = 0;
+    const requestOptions = {
+      method: "GET",
+    };
+    setEnablePlayButtons(0);
+    fetch(SERVER_URL + "/api/playaudio", requestOptions) //POST request
+      .then((response) => {
+        console.log("play audio");
+        setEnableStopButtons(1);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+  function stopAudio() {
+    var status = 0;
+    const requestOptions = {
+      method: "GET",
+    };
+    setEnableStopButtons(0);
+    fetch(SERVER_URL + "/api/stopaudio", requestOptions) //POST request
+      .then((response) => {
+        console.log("stop audio");
+        setEnablePlayButtons(1);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
 
   function sampleNewAudio() {
     const requestOptions = {
@@ -123,17 +161,13 @@ function App() {
     setAudioSamplerMsg("Press and hold the SPACE key while speaking");
     setAudioSamplerLoading(1);
     fetch(SERVER_URL + "/api/sampleaudio", requestOptions)
-      .then((response) => {
-        return response.json();
-      })
-      .then((json) => {
-        if (json.status == 1) {
-          console.log("audio sampler ready");
-          setAudioSampler(true);
-          setAudioSamplerLoading(0);
-          window.addEventListener("keydown", spaceDownHandler);
-          window.addEventListener("keyup", spaceUpHandler);
-        }
+      .then(async (response) => {
+        await timeout(10000);
+        console.log("audio sampler ready");
+        setAudioSampler(true);
+        setAudioSamplerLoading(0);
+        window.addEventListener("keydown", spaceDownHandler);
+        window.addEventListener("keyup", spaceUpHandler);
       })
       .catch((error) => {
         console.log(error);
@@ -144,9 +178,10 @@ function App() {
     return new Promise((res) => setTimeout(res, delay));
   }
 
-  function spaceDownHandler({ code }) {
+  async function spaceDownHandler({ code }) {
     console.log(audioSampler);
     if (code === "Space") {
+      await timeout(200);
       setAudioSamplerMsg("Recording... Release to stop");
       window.removeEventListener("keydown", spaceDownHandler);
     }
@@ -163,13 +198,13 @@ function App() {
 
   return (
     <body className="App-cont">
-      <h1 className="mb32">Pitches be drippin</h1>
+      <h1 className="mb32">Bad Pitches <InfoCircle onClick={handleShow}/></h1>
       {showError ? (
         <div className="error mb16">Url is invalid, please try again</div>
       ) : (
         <></>
       )}
-      {/* <div className="row-cont mb32">
+      <div className="row-cont mb32">
         {!audioSampler ? (
           <>
             <Button
@@ -186,17 +221,22 @@ function App() {
             {audioSamplerLoading ? <Spinner animation="border" /> : <></>}
           </>
         )}
-      </div> */}
+      </div>
       {!URLInput ? (
         <div className="row-cont mb32">
           <div>{midiMsg}</div>
           <Button onClick={() => setURLInput(1)} disabled={!changeSongEnabled}>
             Change Song
           </Button>
+          {showSpinner ? <Spinner animation="border" /> : <></>}
         </div>
       ) : (
         <div className="row-cont mb32">
-          <input type="text" ref={youtubeInput}></input>
+          <input
+            type="text"
+            ref={youtubeInput}
+            placeholder="Youtube URL to Song"
+          ></input>
           <Button onClick={downloadMp3} disabled={!changeSongEnabled}>
             Change Song
           </Button>
@@ -204,13 +244,38 @@ function App() {
         </div>
       )}
       <div className="row-cont">
-        <Button disabled={!enableMediaButtons}>
+        <Button onClick={playAudio} disabled={!enablePlayButtons}>
           <PlayFill />
         </Button>
-        <Button disabled={!enableMediaButtons}>
+        <Button onClick={stopAudio} disabled={!enableStopButtons}>
           <StopFill />
         </Button>
       </div>
+      <Modal
+        show={showModal}
+        onHide={handleClose}
+        size="lg"
+        aria-labelledby="contained-modal-title-vcenter"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Audio Experience Design - Bad Pitches</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Welcome to the AXD Project, by Oscar Jones, Patrick D. McGuckian and
+          Oliver Colebourne.
+        </Modal.Body>
+        <Modal.Body>
+          Bad pitches takes an audio sample of your voice, then plays a tune of
+          your choice (via youtube) with it. There is also an effects panel
+          which adds effects to the audio output.
+        </Modal.Body>
+        <Modal.Body>
+          To start input a youtube URL, and press "Change Sample" and follow the
+          prompts to sample your voice. The play and stop buttons control the
+          playback.
+        </Modal.Body>
+      </Modal>
     </body>
   );
 }

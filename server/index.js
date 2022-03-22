@@ -9,8 +9,8 @@ app.use(bodyParser.json());
 app.use(express.static(__dirname + "/public"));
 const { spawn } = require("child_process");
 
-const pathToDownloads = "./download/";
-const songTitle = "test";
+const pathToDownloads = "../player/to-play/";
+const songTitle = "audio";
 const youtubeMp3Converter = require("youtube-mp3-converter");
 // creates Download function
 const convertLinkToMp3 = youtubeMp3Converter(pathToDownloads);
@@ -27,6 +27,9 @@ var midiStatus = 0;
 
 const { PythonShell } = require("python-shell");
 
+var pyshell;
+var pyshell2;
+
 //Idiomatic expression in express to route and respond to a client request
 app.get("/", (req, res) => {
   //get requests to the root ("/") will route here
@@ -36,8 +39,18 @@ app.get("/", (req, res) => {
 
 function createMidi() {
   console.log("start midi");
-  const midiProcess = spawn('runas /user:administrator "dir"', [], {
-    shell: true,
+  midiStatus = 0;
+  const midiProcess = spawn(
+    "AnthemScore ../player/to-play/audio.mp3 -a -o -m ../player/to-play/audio.mid",
+    [],
+    {
+      shell: true,
+    }
+  );
+
+  midiProcess.stdout.on("message", (message) => {
+    console.log("midimsg:" + message);
+    return;
   });
 
   midiProcess.on("close", (code) => {
@@ -51,13 +64,24 @@ app.get("/api/midiStatus", (req, res) => {
   res.send(JSON.stringify({ status: midiStatus }));
 });
 
+app.get("/api/playaudio", (req, res) => {
+  console.log("play audio");
+  pyshell = new PythonShell("../player/play.py");
+  pyshell.send("hello");
+  pyshell.on("message", function (message) {
+    console.log(message);
+  });
+  res.send();
+});
+app.get("/api/stopaudio", (req, res) => {
+  pyshell.kill("SIGINT");
+  res.send();
+});
+
 app.get("/api/sampleaudio", (req, res) => {
   console.log("audiosampler");
-  // let pyshell = new PythonShell("../sampler/audioSampler.py");
-  // pyshell.on('message', function (message) {
-  //     console.log(message);
-  //     res.send(JSON.stringify({ status: 1 }));
-  // });
+  pyAudioSampler();
+  res.send();
 
   // let options = {
   //   mode: "text",
@@ -70,23 +94,47 @@ app.get("/api/sampleaudio", (req, res) => {
   //   console.log(result);
   //   // res.send(result.toString());
   // });
-  const audiosamplerprocess = spawn(
-    'runas /user:administrator "python ../sampler/audioSampler.py"',
-    [],
-    { shell: true }
-  );
-
-  audiosamplerprocess.stdout.on("data", (data) => {
-    console.log('' + data);
-  });
-
-  audiosamplerprocess.on("close", (code) => {});
 });
 app.get("/api/samplerstatus", (req, res) => {
-  res.send(JSON.stringify({ status: 1 }));
+  res.send(JSON.stringify({ status: audioSamplerStatus }));
 });
 
-async function pyAudioSampler() {}
+var audioSamplerStatus = 0;
+var audioSamplerProgress = 0;
+
+function pyAudioSampler() {
+  audioSamplerStatus = 0;
+  pyshell2 = new PythonShell("../sampler/audioSampler.py");
+  pyshell2.on('message', function (message) {
+    console.log(message);
+    audioSamplerProgress+=1;
+    return;
+  });
+  pyshell2.on('stderr', function (message) {
+    console.log(message);
+    return;
+  });
+  pyshell2.on('error', function (message) {
+    console.log(message);
+    return;
+  });
+  pyshell2.on('close', function (message) {
+    console.log(message);
+    console.log("Audio sampler finished")
+    audioSamplerStatus = 1;
+    return;
+  });
+  // let options = {
+  //   mode: "text",
+  //   pythonOptions: ["-u"], // get print results in real-time
+  //   scriptPath: "../sampler/", //If you are having python_test.py script in same folder, then it's optional.
+  // };
+
+  // PythonShell.run("audioSampler.py", options, function (err, result) {
+  //   console.log(err);
+  //   console.log(result);
+  // });
+}
 
 app.post("/api/submitsong", async (req, res) => {
   //post request from the youtube form will route here
