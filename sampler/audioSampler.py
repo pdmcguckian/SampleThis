@@ -48,27 +48,27 @@ class RecordNotes():
                 
                 note_count = int(len(file_names))
                 note_storage = file_path + "notes/"
-                middle_c_pos = int(note_count/2)
+                middle_note_pos = int(note_count/2)
                 y, sr = librosa.load(file_path+"shifted.wav", sr=self.fs) # y is a numpy array of the wav file, sr = sample rate
 
-                for i in range(middle_c_pos):
-                    print(i, file_names[middle_c_pos+i], file_names[middle_c_pos-i])
+                for i in range(middle_note_pos):
+                    print(i, file_names[middle_note_pos+i], file_names[middle_note_pos-i])
                     
-                    y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=i, bins_per_octave=12) # shifted by 4 half steps
-                    sf.write(note_storage+file_names[middle_c_pos+i], y_shifted, 44100, 'PCM_24')
+                    y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=i, bins_per_octave=12) 
+                    sf.write(note_storage+file_names[middle_note_pos+i], y_shifted, 44100, 'PCM_24')
                     
-                    t=threading.Thread(target=self.StretchRecording,name="run",args=[file_names[middle_c_pos+i]])
+                    t=threading.Thread(target=self.StretchRecording,name="run",args=[file_names[middle_note_pos+i]])
                     t.daemon = True
                     t.start()
-                    #self.StretchRecording(file_names[middle_c_pos+i])
+                    #self.StretchRecording(file_names[middle_note_pos+i])
 
                     
-                    y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=-i, bins_per_octave=12) # shifted by 4 half steps
-                    sf.write(note_storage+file_names[middle_c_pos-i], y_shifted, 44100, 'PCM_24')
-                    u=threading.Thread(target=self.StretchRecording,name="run",args=[file_names[middle_c_pos-i]])
+                    y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=-i, bins_per_octave=12) 
+                    sf.write(note_storage+file_names[middle_note_pos-i], y_shifted, 44100, 'PCM_24')
+                    u=threading.Thread(target=self.StretchRecording,name="run",args=[file_names[middle_note_pos-i]])
                     u.daemon = True
                     u.start()
-                    #self.StretchRecording(file_names[middle_c_pos-i])
+                    #self.StretchRecording(file_names[middle_note_pos-i])
                 print("complete")
 
     def recordSound(self):
@@ -106,24 +106,17 @@ class RecordNotes():
         wf.writeframes(b''.join(self.frames))
         wf.close()
 
-
-    def spectral_centroid(self, x, samplerate=44100):
-        magnitudes = np.abs(np.fft.rfft(x)) # magnitudes of positive frequencies
-        length = len(x)
-        freqs = np.abs(np.fft.fftfreq(length, 1.0/samplerate)[:length//2+1]) # positive frequencies
-        return np.sum(magnitudes*freqs) / np.sum(magnitudes) # return weighted mean
-
     def NormailseFrequency(self):
         y, sr = librosa.load(self.file_path+"raw.wav", sr=self.fs)
 
         tolerance = 0.8
         win_s = 1024 # fft size
         hop_s = 1024 # hop size
-        pitch_o = aubio.pitch("default", win_s, hop_s, self.fs)
+        pitch_o = aubio.pitch("default", win_s, hop_s, self.fs) #YINFFT method. creates instance
         pitch_o.set_tolerance(tolerance)
 
         count = 0
-        for i in y:
+        for i in y: #cutting silence from beginning
             count += 1
             if i >= 0.025:
                 break
@@ -131,20 +124,20 @@ class RecordNotes():
        # y = y[count:]
 
         pitches = []
-        for i in range(1, round(len(y)/hop_s)):
+        for i in range(1, round(len(y)/hop_s)): #finding pitch of each section
             pitch = pitch_o(y[hop_s*(i-1):i*hop_s])[0]
             pitches.append(pitch)
 
         print(pitches)
-        pitch = statistics.median(pitches)
+        pitch = statistics.median(pitches) #finding median of pitches array
 
 
         print(pitch)
-        pitch_shift = math.log(370/pitch)/math.log(1.059463094)
+        pitch_shift = math.log(370/pitch)/math.log(1.059463094) #370 is f#, 1.059 root(2^12)
         
         print(pitch_shift)
 
-        y_A = librosa.effects.pitch_shift(y, sr, n_steps=pitch_shift, bins_per_octave=12)
+        y_A = librosa.effects.pitch_shift(y, sr, n_steps=pitch_shift, bins_per_octave=12) 
         sf.write(self.file_path+"shifted.wav", y_A, 44100, 'PCM_24')
 
 
@@ -158,7 +151,7 @@ class RecordNotes():
         for target_time in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2]:
             scale = time_length / target_time
             sample_rate, samples = wavfile.read(notes_dir+filename)
-            stretched = pyrubberband.pyrb.time_stretch(samples, sample_rate, scale)
+            stretched = pyrubberband.pyrb.time_stretch(samples, sample_rate, scale) #shrink/stretching without changing frequency
             stretched_amp = stretched*2147483648
             wavfile.write(notes_with_time+ f'{filename.split(".")[0]}_{target_time}.wav', sample_rate, stretched_amp.astype(np.int32))
 
